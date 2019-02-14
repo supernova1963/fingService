@@ -1,7 +1,13 @@
 # fhem modul: fingService
 
-1. Netzwerk scannen (yant)
-2. ...
+## Hauptziele:  
+- Netzwerk scannen (**Y**et**A**nother**N**etwork**T**ool)
+- Netzwerkgeräte nach offenen Ports scannen
+- Neue Geräte erkennen
+- Status bekannter Geräte beobachten
+- ping Zeiten zu Netzwerkzielen ermitteln
+- traceroute zu Netzwerkzielen ermitteln
+- ...
 
 ## Voraussetzungen
 
