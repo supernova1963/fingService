@@ -1,5 +1,5 @@
 ##############################################
-# $Id: 74_fingClient.pm 16965 2018-07-09 07:59:58Z rudolfkoenig $
+# $Id: 74_fingClient.pm 16965 2019-02-13 07:59:58Z supernova1963 $
 package main;
 
 use strict;
