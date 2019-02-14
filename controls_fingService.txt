@@ -1,4 +1,6 @@
-UPD 2019-01-26_10:06:55 5239 FHEM/74_fingClient.pm
+UPD 2019-02-14_17:17:30 4096 FHEM/._74_fingClient.pm
+UPD 2019-02-14_17:17:31 4096 FHEM/._74_fingService.pm
+UPD 2019-02-13_16:25:28 5237 FHEM/74_fingClient.pm
 UPD 2019-02-13_14:58:22 26664 FHEM/74_fingService.pm
 UPD 2017-09-26_15:27:46 1168 FHEM/lib/Device/fingService/conf.properties
 UPD 2017-09-26_15:27:46 2715 FHEM/lib/Device/fingService/discovery.properties
