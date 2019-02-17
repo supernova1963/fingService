@@ -150,7 +150,8 @@ sub
 fingService_Undef($$)
 {
     my ($hash, $arg) = @_;
-    fingService_Clean($hash,"1");
+    my $param = "1";
+    fingService_Clean($hash);
     return undef;
 }
 
@@ -158,7 +159,8 @@ sub
 fingService_Delete($$)
 {
     my ($hash, $arg) = @_;
-    fingService_Clean($hash,"1");
+    my $param = "1";
+    fingService_Clean($hash);
     return undef;
 }
 
@@ -171,7 +173,7 @@ fingService_Rename($$)
 	my $new_index = "Module_fingService_".$new_name."_data";
 
 	my ($err, $data) = getKeyValue($old_index);
-	#return undef unless(defined($old_pwd));
+        #return undef unless(defined($old_pwd));
 
 	setKeyValue($new_index, $data);
 	setKeyValue($old_index, undef);
@@ -179,8 +181,7 @@ fingService_Rename($$)
 
 ################################################################################
 # Alle Timer und Hintergrundprozesse beenden
-sub
-fingService_Clean($$)
+sub fingService_Clean($)
 {
   my ($hash,$ClientDelete) = @_;
   # Internen Timer löschen
@@ -366,10 +367,10 @@ sub fingService_Discover_expand($$)
     # IP aufbereiten -> Punkte entfernen und auf 3 Stellen mit 0 auffüllen
     my $regex = qr/(?<e1>.*)\.(?<e2>.*)\.(?<e3>.*)\.(?<e4>.*)/mp;
     if ( $temp =~ /$regex/g ) {
-      $e1 = $+{e1};
-      $e2 = $+{e2};
-      $e3 = $+{e3};
-      $e4 = $+{e4};
+      $e1 = sprintf("%03d", $+{e1});
+      $e2 = sprintf("%03d", $+{e2});
+      $e3 = sprintf("%03d", $+{e3});
+      $e4 = sprintf("%03d", $+{e4});
       $temp = sprintf("%03d", $e1)."".sprintf("%03d", $e2)."".sprintf("%03d", $e3)."".sprintf("%03d", $e4);
     }
     else {
