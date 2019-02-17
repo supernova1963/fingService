@@ -171,7 +171,7 @@ fingService_Rename($$)
 	my $new_index = "Module_fingService_".$new_name."_data";
 
 	my ($err, $data) = getKeyValue($old_index);
-	return undef unless(defined($old_pwd));
+	#return undef unless(defined($old_pwd));
 
 	setKeyValue($new_index, $data);
 	setKeyValue($old_index, undef);
