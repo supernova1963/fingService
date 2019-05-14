@@ -7,7 +7,7 @@ use SetExtensions;
 use Blocking;
 use JSON;
 use Data::Dumper;
-
+use CoProcess;
 
 my $fingService_Version = "0.0.1";
 
@@ -16,9 +16,12 @@ fingService_Initialize($)
 {
   my ($hash) = @_;
 
-  $hash->{SetFn}     = "fingService_Set";
-  $hash->{DefFn}     = "fingService_Define";
-  $hash->{AttrList}  = "readingList setList useSetExtensions ".
+  $hash->{SetFn}           = "fingService_Set";
+  $hash->{DefFn}           = "fingService_Define";
+  $hash->{ReadFn}          = "fingService_Read";
+  $hash->{ShutdownFn}        = "fingService_Shutdown";
+  $hash->{DelayedShutdownFn} = "fingService_DelayedShutdown";
+  $hash->{AttrList}        = "readingList setList useSetExtensions ".
                        "disable disabledForIntervals ".
                        "fingServiceServer ".
                        "fhemServer telnetPort globalPw ".
@@ -129,6 +132,15 @@ fingService_Define($$)
   # Übergabe der Define - Parameter in den Modul - hash
   $hash->{fingVersion} = $rc;
   $hash->{Version} = $fingService_Version;
+  $hash->{CoProcess} = {  name => 'fingService',
+                        cmdFn => 'fingService_getCMD',
+                     };
+  if( $init_done ) {
+    CoProcess::start($hash);
+  }
+  else {
+    $hash->{STATE} = 'active';
+  }
   $rc = `ps -FC fing.bin |grep fing`;
   $regex = qr/(?<user>\S*)\s*(?<pid>\S*)\s{1,8}(?<ppid>\S*)\s{1,8}(?<c>\S*)\s{1,8}(?<sz>\S*)\s{1,8}(?<rss>\S*)\s{1,8}(?<psr>\S*)\s{1,8}(?<stime>\S*)\s{1,8}(?<tty>\S*)\s{1,8}(?<time>\S*)\s{1,8}(?<cmd>.*)\n/mp;
   if ( $rc =~ /$regex/g ) {
@@ -174,7 +186,6 @@ fingService_Define($$)
   }
   readingsSingleUpdate($hash, "state", "definiert", 1);
 
-
   return undef;
 }
 
@@ -184,6 +195,18 @@ fingService_Undef($$)
     my ($hash, $arg) = @_;
     my $param = "1";
     fingService_Clean($hash);
+    if( $hash->{PID} ) {
+      $hash->{undefine} = 1;
+      $hash->{undefine} = $hash->{CL} if( $hash->{CL} );
+
+      $hash->{reason} = 'delete';
+      CoProcess::stop($hash);
+
+      return "$name will be deleted after fingService has stopped or after 5 seconds. whatever comes first.";
+    }
+
+    delete $modules{$hash->{TYPE}}{defptr};
+
     return undef;
 }
 
@@ -210,6 +233,60 @@ fingService_Rename($$)
 	setKeyValue($new_index, $data);
 	setKeyValue($old_index, undef);
 }
+
+sub
+fingService_DelayedShutdownFn($)
+{
+  my ($hash) = @_;
+
+  if( $hash->{PID} ) {
+    $hash->{shutdown} = 1;
+    $hash->{shutdown} = $hash->{CL} if( $hash->{CL} );
+
+    $hash->{reason} = 'shutdown';
+    CoProcess::stop($hash);
+
+    return 1;
+  }
+
+  return undef;
+}
+
+sub
+fingService_Shutdown($)
+{
+  my ($hash) = @_;
+
+  CoProcess::terminate($hash);
+
+  delete $modules{$hash->{TYPE}}{defptr};
+
+  return undef;
+}
+
+sub
+fingService_Read($) {
+  my ($hash) = @_;
+  my $name = $hash->{NAME};
+
+  my $buf = CoProcess::readFn($hash);
+  return undef if( !$buf );
+
+  ...
+}
+
+sub
+fingService_getCMD($) {
+  my ($hash) = @_;
+  my $name = $hash->{NAME};
+  my $net = "-n ".ReadingsVal($name,"networks",undef);
+  my $session = "--session ".AttrVal($name,"sessionfile","/opt/fing/discovery.session");
+  my $log = "-o log,csv,".AttrVal($name,"logfile","/opt/fing/discovery.log");
+  my $json = "-o table,json,".AttrVal($name,"jsonfile","/opt/fing/discovery.json");
+  return "sudo /usr/bin/fing $net $session $log $json";
+}
+
+
 
 ################################################################################
 # Alle Timer und Hintergrundprozesse beenden
