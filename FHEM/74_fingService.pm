@@ -194,6 +194,7 @@ fingService_Undef($$)
 {
     my ($hash, $arg) = @_;
     my $param = "1";
+    my $name = $hash->{NAME};
     fingService_Clean($hash);
     if( $hash->{PID} ) {
       $hash->{undefine} = 1;
@@ -215,6 +216,7 @@ fingService_Delete($$)
 {
     my ($hash, $arg) = @_;
     my $param = "1";
+    my $name = $hash->{NAME};
     fingService_Clean($hash);
     return undef;
 }
@@ -238,7 +240,7 @@ sub
 fingService_DelayedShutdownFn($)
 {
   my ($hash) = @_;
-
+  my $name = $hash->{NAME};
   if( $hash->{PID} ) {
     $hash->{shutdown} = 1;
     $hash->{shutdown} = $hash->{CL} if( $hash->{CL} );
@@ -256,7 +258,7 @@ sub
 fingService_Shutdown($)
 {
   my ($hash) = @_;
-
+  my $name = $hash->{NAME};
   CoProcess::terminate($hash);
 
   delete $modules{$hash->{TYPE}}{defptr};
@@ -271,8 +273,7 @@ fingService_Read($) {
 
   my $buf = CoProcess::readFn($hash);
   return undef if( !$buf );
-
-  ...
+  
 }
 
 sub
