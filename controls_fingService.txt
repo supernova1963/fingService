@@ -1,28 +1,28 @@
 DEL ./FHEM/74_fingClient.pm
-UPD 2019-05-12_10:36:44 5237 FHEM/74_fingClient.pm
-DEL ./FHEM/74_fingService.pm
-UPD 2019-05-14_12:36:43 30147 FHEM/74_fingService.pm
-DEL ./FHEM/lib/Device/fingService/fingService.session
-UPD 2019-05-12_10:36:44 22548 FHEM/lib/Device/fingService/fingService.session
-DEL ./FHEM/lib/Device/fingService/fingService.session.save
-UPD 2019-05-12_10:36:44 23351 FHEM/lib/Device/fingService/fingService.session.save
-DEL ./FHEM/lib/Device/fingService/timezones.csv
-UPD 2019-05-12_10:36:44 35855 FHEM/lib/Device/fingService/timezones.csv
-DEL ./FHEM/lib/Device/fingService/ip-services.properties
-UPD 2019-05-12_10:36:44 90984 FHEM/lib/Device/fingService/ip-services.properties
-DEL ./FHEM/lib/Device/fingService/hosts.properties
-UPD 2019-05-12_10:36:44 400 FHEM/lib/Device/fingService/hosts.properties
-DEL ./FHEM/lib/Device/fingService/ethernet-ouis.properties
-UPD 2019-05-12_10:36:44 377884 FHEM/lib/Device/fingService/ethernet-ouis.properties
-DEL ./FHEM/lib/Device/fingService/kit.properties
-UPD 2019-05-12_10:36:44 171 FHEM/lib/Device/fingService/kit.properties
-DEL ./FHEM/lib/Device/fingService/discovery.properties
-UPD 2019-05-12_10:36:44 2715 FHEM/lib/Device/fingService/discovery.properties
-DEL ./FHEM/lib/Device/fingService/conf.properties
-UPD 2019-05-12_10:36:44 1168 FHEM/lib/Device/fingService/conf.properties
+UPD 2019-05-14_13:13:01 5237 FHEM/74_fingClient.pm
 DEL ./FHEM/lib/Device/fingService/fingService.yml
-UPD 2019-05-12_10:36:44 2798 FHEM/lib/Device/fingService/fingService.yml
-DEL ./FHEM/lib/Device/fingService/fing.properties
-UPD 2019-05-12_10:36:44 2062 FHEM/lib/Device/fingService/fing.properties
+UPD 2019-05-14_13:13:01 2798 FHEM/lib/Device/fingService/fingService.yml
+DEL ./FHEM/lib/Device/fingService/timezones.csv
+UPD 2019-05-14_13:13:01 35855 FHEM/lib/Device/fingService/timezones.csv
+DEL ./FHEM/lib/Device/fingService/ip-services.properties
+UPD 2019-05-14_13:13:01 90984 FHEM/lib/Device/fingService/ip-services.properties
+DEL ./FHEM/lib/Device/fingService/hosts.properties
+UPD 2019-05-14_13:13:01 400 FHEM/lib/Device/fingService/hosts.properties
+DEL ./FHEM/lib/Device/fingService/ethernet-ouis.properties
+UPD 2019-05-14_13:13:01 377884 FHEM/lib/Device/fingService/ethernet-ouis.properties
 DEL ./FHEM/lib/Device/fingService/fingService.json
-UPD 2019-05-12_10:36:44 5803 FHEM/lib/Device/fingService/fingService.json
+UPD 2019-05-14_13:13:01 5803 FHEM/lib/Device/fingService/fingService.json
+DEL ./FHEM/lib/Device/fingService/kit.properties
+UPD 2019-05-14_13:13:01 171 FHEM/lib/Device/fingService/kit.properties
+DEL ./FHEM/lib/Device/fingService/discovery.properties
+UPD 2019-05-14_13:13:01 2715 FHEM/lib/Device/fingService/discovery.properties
+DEL ./FHEM/lib/Device/fingService/conf.properties
+UPD 2019-05-14_13:13:01 1168 FHEM/lib/Device/fingService/conf.properties
+DEL ./FHEM/lib/Device/fingService/fingService.session
+UPD 2019-05-14_13:13:01 22548 FHEM/lib/Device/fingService/fingService.session
+DEL ./FHEM/lib/Device/fingService/fing.properties
+UPD 2019-05-14_13:13:01 2062 FHEM/lib/Device/fingService/fing.properties
+DEL ./FHEM/lib/Device/fingService/fingService.session.save
+UPD 2019-05-14_13:13:01 23351 FHEM/lib/Device/fingService/fingService.session.save
+DEL ./FHEM/74_fingService.pm
+UPD 2019-05-14_15:07:56 31911 FHEM/74_fingService.pm
