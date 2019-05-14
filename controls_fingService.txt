@@ -1,7 +1,7 @@
 DEL ./FHEM/74_fingClient.pm
 UPD 2019-05-12_10:36:44 5237 FHEM/74_fingClient.pm
 DEL ./FHEM/74_fingService.pm
-UPD 2019-05-14_16:57:21 31911 FHEM/74_fingService.pm
+UPD 2019-05-14_17:23:40 32021 FHEM/74_fingService.pm
 DEL ./FHEM/lib/Device/fingService/fingService.session
 UPD 2019-05-12_10:36:44 22548 FHEM/lib/Device/fingService/fingService.session
 DEL ./FHEM/lib/Device/fingService/fingService.session.save
