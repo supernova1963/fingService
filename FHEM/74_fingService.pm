@@ -1,5 +1,5 @@
 ##############################################
-# $Id: 98_fingService.pm 16965 2018-07-09 07:59:58Z rudolfkoenig $
+# $Id: 74_fingService.pm supernova1963 $
 package main;
 use strict;
 use warnings;
@@ -45,6 +45,9 @@ fingService_Set($@)
   $setList = $setList
     ."fingInfo:noArg"
     ." fingDiscover:".join(",",@adapterList)
+    ." fingDiscoverSession:"."read,reset"
+    ." fingDiscoverJson:"."read,reset"
+    ." fingDiscoverLog:"."start,stop,reset"
     ." fingService_start:".join(",",@adapterList);
     #." fingService_stop:".$hash->{helper}{SERVICE_PID}." ";
 
@@ -82,12 +85,16 @@ fingService_Set($@)
       $fingparams->{net} = $arg;
       fingService_Discover($name,$fingparams);
     }
-    elsif ($cmd eq 'fingService_start') {
-        fingService_Service($hash,$arg);
+    elsif ($cmd eq 'fingDiscoverSession') {
+        fingService_DiscoverSession($hash,$arg);
     }
-    elsif ($cmd eq 'fingService_stop') {
-        fingService_Service($hash,$arg);
+    elsif ($cmd eq 'fingDiscoverJson') {
+        fingService_DiscoverJson($hash,$arg);
     }
+    elsif ($cmd eq 'fingDiscoverLog') {
+        fingService_DiscoverLog($hash,$arg);
+    }
+
     else {
       return "Unknown argument $cmd, choose one of $setList";
     }
@@ -112,7 +119,7 @@ fingService_Define($$)
   my $rc = `fing -v`;
   my $regex = qr/(.).(.).(.)/mp;
   if ( $rc =~ /$regex/g ) {
-    if (($1 < 5) | ($2 < 3) | ($3 < 3)){
+    if (($1 < 5) | ($2 < 4) | ($3 < 0)){
       return "Fehler bei der Versionsprüfung (".$rc.")!\nDownload aktuelle Version von fing:\n https://www.fing.io/fingkit-sdk-downloads/";
     }
   }
@@ -122,23 +129,48 @@ fingService_Define($$)
   # Übergabe der Define - Parameter in den Modul - hash
   $hash->{fingVersion} = $rc;
   $hash->{Version} = $fingService_Version;
-
+  $rc = `ps -FC fing.bin |grep fing`;
+  $regex = qr/(?<user>\S*)\s*(?<pid>\S*)\s{1,8}(?<ppid>\S*)\s{1,8}(?<c>\S*)\s{1,8}(?<sz>\S*)\s{1,8}(?<rss>\S*)\s{1,8}(?<psr>\S*)\s{1,8}(?<stime>\S*)\s{1,8}(?<tty>\S*)\s{1,8}(?<time>\S*)\s{1,8}(?<cmd>.*)\n/mp;
+  if ( $rc =~ /$regex/g ) {
+    $hash->{PROCESS}{PID} = $+{pid};
+    $hash->{PROCESS}{USER} = $+{user};
+    $hash->{PROCESS}{PPID} = $+{ppid};
+    $hash->{PROCESS}{C} = $+{c};
+    $hash->{PROCESS}{SZ} = $+{sz};
+    $hash->{PROCESS}{RSS} = $+{rss};
+    $hash->{PROCESS}{PSR} = $+{psr};
+    $hash->{PROCESS}{STIME} = $+{stime};
+    $hash->{PROCESS}{TTY} = $+{tty};
+    $hash->{PROCESS}{TIME} = $+{time};
+    $hash->{PROCESS}{CMD} = $+{cmd};
+  }
+  else {
+    if (!defined(InternalVal($name,"NAME",undef))) {
+      return "Fehler bei der Überprüfung von fing (".$rc.")!\nKann es sein, dass fingCLI nicht als Dienst läuft?";
+    }
+    else {
+      readingsSingleUpdate($hash, "state", "fingService Dienst läuft nicht, bitte starten!", 1);
+    }
+  }
   fingService_Info($name) if (!defined(ReadingsVal($name,"adapters",undef)));
   $attr{$name}{autocreateDevices} = 0 if (!defined(AttrVal($name,"autocreateDevices",undef)));
   $attr{$name}{fhemServer} = "localhost" if (!defined(AttrVal($name,"fhemServer",undef)));
   $attr{$name}{fingDevice_Group} = "Geräte" if (!defined(AttrVal($name,"fingDevice_Group",undef)));
   $attr{$name}{fingDevice_ID} = "MAC" if (!defined(AttrVal($name,"fingDevice_ID",undef)));
-  $attr{$name}{fingDevice_Room} = "Geräte" if (!defined(AttrVal($name,"fingDevice_Room",undef)));
+  $attr{$name}{fingDevice_Room} = "99_Netzwerk" if (!defined(AttrVal($name,"fingDevice_Room",undef)));
   $attr{$name}{fingServiceServer} = "localhost" if (!defined(AttrVal($name,"fingServiceServer",undef)));
   $attr{$name}{fingService_Net} = "" if (!defined(AttrVal($name,"fingDevice_Group",undef)));
   $attr{$name}{fingService_RDNS} = "on" if (!defined(AttrVal($name,"fingService_RDNS",undef)));
   $attr{$name}{fingService_Rounds} = "1" if (!defined(AttrVal($name,"fingService_Rounds",undef)));
-  $attr{$name}{room} = "Netzwerk" if (!defined(AttrVal($name,"room",undef)));
+  $attr{$name}{room} = "99_Netzwerk" if (!defined(AttrVal($name,"room",undef)));
   $attr{$name}{group} = "Service" if (!defined(AttrVal($name,"group",undef)));
+  $attr{$name}{sessionfile} = "/opt/fing/discovery.session" if (!defined(AttrVal($name,"sessionfile",undef)));
+  $attr{$name}{jsonfile} = "/opt/fing/discovery.json" if (!defined(AttrVal($name,"jsonfile",undef)));
+  $attr{$name}{logfile} = "/opt/fing/discovery.log" if (!defined(AttrVal($name,"logfile",undef)));
   if (!defined(ReadingsVal($name,"lastScan",undef))) {
     my $parameter->{rdns} = "on";
     $parameter->{rounds} = 1;
-    fingService_Discover($name,$parameter);
+    #fingService_Discover($name,$parameter);
   }
   readingsSingleUpdate($hash, "state", "definiert", 1);
 
@@ -201,11 +233,86 @@ sub fingService_Clean($)
   return undef;
 }
 ################################################################################
+sub fingService_DiscoverSession($$)
+{
+  my ($hash,$parameter) = @_;
+  my $name = $hash->{NAME};
+  my $sessionfile = AttrVal($name,"sessionfile","/opt/fing/discovery.session");
+  my $rc = "";
+  if ($parameter eq "read") {
+    open (FILEHANDLE,"<$sessionfile");
+    my $session = do { local $/; <FILEHANDLE> };
+    $hash->{helper}{session} = $session;
+    Log3 $hash, 3, "$hash->{NAME}: sessionfile eingelesen!";
+  }
+  elsif ($parameter eq "reset") {
+        $rc = `sudo /usr/bin/truncate -s 0 $sessionfile`;
+    Log3 $hash, 3, "$hash->{NAME}: sessionfile gelöscht: $!";
+  }
+  else {
+    Log3 $hash, 3, "$hash->{NAME}: sessionfile: $parameter: nothing todo!";
+  }
+}
+################################################################################
+sub fingService_DiscoverJson($$)
+{
+  my ($hash,$parameter) = @_;
+  my $name = $hash->{NAME};
+  my $jsonfile = AttrVal($name,"jsonfile","/opt/fing/discovery.json");
+  my $rc = "";
+  if ($parameter eq "read") {
+    open (FILEHANDLE,"<$jsonfile");
+    my $result = do { local $/; <FILEHANDLE> };
+    my $regex = "";
+    my $regex2 = "";
+    my $rc = "";
+    my $adapter = $hash->{helper}{fingDiscover}{net};
+    my $net = $hash->{helper}{fingDiscover}{netdiscover};
+    $result = urlDecode($result);
+    my $json = new JSON;
+    my $lastScanResult = $json->decode($result);
+    $lastScanResult->{net} = $adapter;
+    $lastScanResult->{lastScan} = TimeNow();
+    my $perl_scalar = $json->decode($result);
+    $hash->{helper}{fingDiscover}{result} = $json->pretty->encode($perl_scalar);
+    Log3 $hash, 3, "$hash->{NAME}: jsonfile eingelesen!";
+    fingService_Discover_expand($hash,$lastScanResult);
+  }
+  elsif ($parameter eq "reset") {
+    $rc = `sudo /usr/bin/truncate -s 0 $jsonfile`;
+    Log3 $hash, 3, "$hash->{NAME}: jsonfile geleert: $rc";
+  }
+  else {
+    Log3 $hash, 3, "$hash->{NAME}: jsonfile: $parameter:  nothing todo!";
+  }
+}
+################################################################################
+sub fingService_DiscoverLog($$)
+{
+  my ($hash,$parameter) = @_;
+  my $name = $hash->{NAME};
+  my $rc = "";
+  my $logfile = AttrVal($name,"logfile","/opt/fing/discovery.log");
+  if ($parameter eq "read") {
+    open (FILEHANDLE,"<$logfile");
+    my $log = do { local $/; <FILEHANDLE> };
+    $hash->{helper}{log} = $log;
+    Log3 $hash, 3, "$hash->{NAME}: logfile eingelesen!";
+  }
+  elsif ($parameter eq "reset") {
+    $rc = `sudo /usr/bin/truncate -s 0 $logfile`;
+    Log3 $hash, 3, "$hash->{NAME}: logfile geleert: $rc";
+  }
+  else {
+    Log3 $hash, 3, "$hash->{NAME}: logfile: $parameter: nothing todo!";
+  }
+}
+
 
 
 ################################################################################
 # fingService_Discover - Netzwerk scannen
-################################################################################
+
 # fingService_Discover Aufruf
 sub fingService_Discover($$)
 {
@@ -257,7 +364,6 @@ sub fingService_Discover($$)
         Log3 $hash, 3, "$hash->{NAME}: Blocking Call fingService_Discover läuft, es wurde kein neuer gestartet!";
     }
 }
-################################################################################
 # fingService_Discover_run() Blocking Sub-Routine wird ausgeführt
 sub fingService_Discover_run($)
 {
@@ -281,7 +387,6 @@ sub fingService_Discover_run($)
     $result = urlEncode($result);
     return $name."|".$result;
 }
-################################################################################
 # fingService_Discover_finished() Blocking Sub-Routine wurde abgeschlossen
 sub fingService_Discover_finished($)
 {
@@ -318,7 +423,6 @@ sub fingService_Discover_finished($)
 
     fingService_Discover_expand($hash,$lastScanResult);
 }
-################################################################################
 # fingService_Discover_abort Blocking Sub-Routine wurde abgebrochen
 sub fingService_Discover_abort($)
 {
@@ -401,7 +505,7 @@ sub fingService_Discover_expand($$)
       $hashDevice = $defs{$praefix};
       $hashDeviceName = $hashDevice->{NAME};
       fhem("set ".$hashDeviceName." ".$lastScanResult->{Hosts}->[$i]->{State});
-      $attr{$hashDeviceName}{room} = AttrVal($hash,"fingDevice_Room","Netzwerk");
+      $attr{$hashDeviceName}{room} = AttrVal($hash,"fingDevice_Room","99_Netzwerk");
       $attr{$hashDeviceName}{group} = AttrVal($name,"fingDevice_Group","Geräte");
       # alias Attribut auf Name setzen, wenn in der Benutzervorgabe in fing Voreinstellungen hosts.properties erfasst wurde, wird er als Name im Scanergebnis abgelegt
       if ($lastScanResult->{Hosts}->[$i]->{Name} ne "") {
@@ -455,10 +559,9 @@ sub fingService_Discover_expand($$)
 }
 ################################################################################
 
-
 ################################################################################
 # fingInfo - Basisdaten holen
-################################################################################
+
 # fingService_Info Aufruf
 sub fingService_Info($)
 {
@@ -478,7 +581,7 @@ sub fingService_Info($)
         Log3 $hash, 3, "$hash->{NAME}: Blocking Call fingService_Info läuft, es wurde kein neuer gestartet!";
     }
 }
-################################################################################
+
 # fingService_Info_run() Blocking Sub-Routine wird ausgeführt
 sub fingService_Info_run($)
 {
@@ -489,7 +592,7 @@ sub fingService_Info_run($)
     $result = urlEncode($result);
     return $name."|".$result;
 }
-################################################################################
+
 # fingService_Info_finished() Blocking Sub-Routine wurde abgeschlossen
 sub fingService_Info_finished($)
 {
@@ -549,7 +652,7 @@ sub fingService_Info_finished($)
     delete($hash->{helper}{INFORUNNING_PID});
     readingsSingleUpdate($hash, "state", "fingInfo beendet", 1);
 }
-################################################################################
+
 # fingService_Info_abort Blocking Sub-Routine wurde abgebrochen
 sub fingService_fingInfo_abort($)
 {
@@ -558,8 +661,6 @@ sub fingService_fingInfo_abort($)
     Log3 $hash->{NAME}, 3, "fingService_Info für ".$hash->{NAME}." wurde abgebrochen";
 
 }
-################################################################################
-
 ################################################################################
 # fingService
 # Kennzeichen für das Ende des fhem - Moduls
